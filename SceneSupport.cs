@@ -50,7 +50,7 @@ namespace HousePartyPlugin
             return (field.GetValue(null) as ISupportModule_From)!;
         }
 
-        public static GameObject Main_get_obj(object instance)
+        public static GameObject Main_get_obj()
         {
             var assembly = Assembly.GetAssembly(typeof(MelonPlugin))!;
             var type = assembly.GetType("Melonloader.Suppport.Main")!;
@@ -80,6 +80,12 @@ namespace HousePartyPlugin
             var indexField = type.GetField("buildIndex")!;
             indexField.SetValue(obj, buildIndex);
             return obj;
+        }
+        public static GameObject CreateMainGameObject()
+        {
+            var type = Type.GetType("Melonloader.Support.SM_Component")!;
+            var method = type.GetMethod("CreateMainGameObject")!;
+            return (GameObject)(method?.Invoke(null, Array.Empty<object>()))!;
         }
     }
 }

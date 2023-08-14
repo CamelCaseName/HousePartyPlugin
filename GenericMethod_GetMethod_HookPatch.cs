@@ -2,14 +2,12 @@
 
 namespace HousePartyPlugin
 {
-    [HarmonyPatch("Il2CppInterop.Runtime.Injection.Hooks.GenericMethod_GetMethod_Hook", "FindTargetMethod")]
+    [HarmonyPatch("Il2CppInterop.Runtime.Injection.InjectorHelpers", "Setup")]
     internal static class GenericMethod_GetMethod_HookPatch
     {
-        [HarmonyPrefix]
-        public static bool FindTargetMethod(ref IntPtr __result)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            __result = (IntPtr)0;
-            return false;
+            return instructions;
         }
     }
 }

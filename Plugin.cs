@@ -18,16 +18,30 @@ namespace HousePartyPlugin
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
 
             //patch the scenehandler
-            MelonLogger.Msg("Patching the SceneHandler and unhooking the Hook on hk_GetGenericMethodGetMethod from Il2CppInterop");
+            MelonLogger.Msg("Patching the SceneHandler");
+            PatchSceneHandler();
+            //patching il2cppinterop.runtime
+            MelonLogger.Msg("Unhooking the Hook on hkGenericMethodGetMethod from Il2CppInterop");
             HarmonyInstance.PatchAll();
-            MelonLogger.Msg("All patches done, unregistering plugin");
-            Unregister("Compatiblity set up");
+            Unregister("All patches done, unregistered plugin");
         }
 
         private static void ForceDumperVersion()
         {
             PropertyInfo ForceDumperVersion = typeof(MelonLaunchOptions.Il2CppAssemblyGenerator).GetProperty("ForceVersion_Dumper")!;
             ForceDumperVersion.SetValue(null, ForcedCpp2ILVersion);
+        }
+
+        private void PatchSceneHandler()
+        {
+            var assembly = Assembly.Load(File.ReadAllBytes(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
+            var type = assembly.GetType("MelonLoader.Support.SceneHandler")!;
+
+            var loadType = typeof(SceneHandlerPatch_OnSceneLoad);
+            var unloadType = typeof(SceneHandlerPatch_OnSceneUnload);
+
+            HarmonyInstance.Patch(type.GetMethod("OnSceneLoad"), new(loadType.GetMethod("Prefix")));
+            HarmonyInstance.Patch(type.GetMethod("OnSceneUnload"), new(unloadType.GetMethod("Prefix")));
         }
     }
 }
