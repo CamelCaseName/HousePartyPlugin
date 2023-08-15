@@ -39,7 +39,6 @@ namespace HousePartyPlugin
 
             return false;
         }
-
     }
 
     internal class SceneHandlerPatch

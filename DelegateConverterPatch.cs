@@ -23,7 +23,7 @@ namespace HousePartyPlugin
             harmony.Patch(methodBase, null, null, new(transpilerMethod));
 
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::GenerateNativeToManagedTrampoline()");
-            methodBase = typeof(DelegateSupport).GetMethod("GenerateNativeToManagedTrampoline");
+            methodBase = typeof(DelegateSupport).GetMethod("GenerateNativeToManagedTrampoline")!;
             transpilerMethod = typeof(DelegateSupport_GenerateNativeToManagedTrampolinePatch)
                 .GetMethod(nameof(DelegateSupport_GenerateNativeToManagedTrampolinePatch.Transpiler));
             harmony.Patch(methodBase, null, null, new(transpilerMethod));

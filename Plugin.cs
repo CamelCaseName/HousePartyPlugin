@@ -78,10 +78,18 @@ namespace HousePartyPlugin
         private static void DeleteOldIl2CppAssemblies()
         {
             if (Directory.Exists(".\\MelonLoader\\Il2CppAssemblies"))
-                foreach (var file in Directory.GetFiles(".\\MelonLoader\\Il2CppAssemblies"))
+            {
+                try
                 {
-                    File.Delete(file);
+                    foreach (var file in Directory.GetFiles(".\\MelonLoader\\Il2CppAssemblies"))
+                    {
+                        File.Delete(file);
+                    }
                 }
+                catch {
+                    MelonLogger.Error("Please go to Melonloader/Il2CppAssemblies and delete all files in that folder!");
+                }
+            }
         }
 
         public override void OnPreSupportModule()
