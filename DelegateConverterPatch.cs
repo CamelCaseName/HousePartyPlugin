@@ -1,10 +1,12 @@
 ﻿using HarmonyLib;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.InteropTypes;
+using Il2CppInterop.Runtime.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Il2CppException = Il2CppInterop.Runtime.Il2CppException;
 
 namespace HousePartyPlugin
 {
@@ -43,11 +45,8 @@ namespace HousePartyPlugin
             var nativeMethodInfoObject = IL2CPP.il2cpp_runtime_invoke(nativeGetMethod, type.Pointer, (void**)parameters, ref exception);
             Il2CppException.RaiseExceptionIfNecessary(exception);
             if (nativeMethodInfoObject != IntPtr.Zero)
-            {
-                var CreateUnsafeMethod = typeof(Il2CppObjectBase).GetMethod("CreateUnsafe`1", BindingFlags.Static | BindingFlags.NonPublic)!;
-                CreateUnsafeMethod.MakeGenericMethod(typeof(Il2CppSystem.Reflection.MethodInfo));
-                return (Il2CppSystem.Reflection.MethodInfo)(Il2CppObjectBase)CreateUnsafeMethod.Invoke(null, new object[] { nativeMethodInfoObject })!;
-            }
+
+                return Il2CppObjectPool.Get<Il2CppSystem.Reflection.MethodInfo>(nativeMethodInfoObject);
             else
                 throw new MissingMethodException("method was not found");
         }
