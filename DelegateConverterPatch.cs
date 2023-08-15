@@ -16,7 +16,7 @@ namespace HousePartyPlugin
         internal static void Apply(HarmonyLib.Harmony harmony)
         {
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
-            var methodBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
+            MethodBase methodBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
                 .MakeGenericMethod(typeof(Il2CppObjectBase));
             var transpilerMethod = typeof(DelegateSupport_ConvertDelegatePatch)
                 .GetMethod(nameof(DelegateSupport_ConvertDelegatePatch.Transpiler));
@@ -29,13 +29,8 @@ namespace HousePartyPlugin
             harmony.Patch(methodBase, null, null, new(transpilerMethod));
 
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport+MethodSignature::MethodSignature()");
-            foreach (var item in typeof(DelegateSupport).Assembly.GetType("Il2CppInterop.Runtime.DelegateSupport+MethodSignature")!.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.CreateInstance | BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.InvokeMethod))
-            {
-                MelonLogger.Msg(item.FullDescription());
-            }
-            methodBase = typeof(DelegateSupport).Assembly.GetType("Il2CppInterop.Runtime.DelegateSupport+MethodSignature")!
-                .GetMethod(".ctor", new Type[] { typeof(Il2CppSystem.Reflection.MethodInfo), typeof(bool) });
-            MelonLogger.Msg(methodBase);
+            methodBase = MethodBase.GetMethodFromHandle(typeof(DelegateSupport).Assembly.GetType("Il2CppInterop.Runtime.DelegateSupport+MethodSignature")!
+                .GetConstructor(new Type[] { typeof(Il2CppSystem.Reflection.MethodInfo), typeof(bool) })!.MethodHandle)!;
             transpilerMethod = typeof(DelegateSupport_MethodSignature_MethodSignature)
                 .GetMethod(nameof(DelegateSupport_MethodSignature_MethodSignature.Transpiler));
             harmony.Patch(methodBase, null, null, new(transpilerMethod));
