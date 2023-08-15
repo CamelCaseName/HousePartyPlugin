@@ -72,7 +72,7 @@ namespace HousePartyPlugin
 
             //patching the il2cppinterop delegate converter
             DelegateConverterPatch.Apply(HarmonyInstance);
-            MelonLogger.Msg("Patched the DelegateConverter");
+            //does its own logging
         }
 
         private static void DeleteOldIl2CppAssemblies()
@@ -110,11 +110,12 @@ namespace HousePartyPlugin
             {
                 var asmBytes = new byte[str.Length];
                 str.Read(asmBytes, 0, asmBytes.Length);
+                MelonLogger.Msg($"Loaded {args.Name} from our embedded resources");
                 return Assembly.Load(asmBytes);
             }
             else
             {
-                MelonLogger.Error("Assembly " + name + " not found in resources!");
+                MelonLogger.Error($"Assembly {args.Name} not found in resources!");
                 return null!;
             }
         }

@@ -2,6 +2,7 @@
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.InteropTypes;
 using Il2CppInterop.Runtime.Runtime;
+using MelonLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,15 +15,37 @@ namespace HousePartyPlugin
     {
         internal static void Apply(HarmonyLib.Harmony harmony)
         {
-            var methodBase = typeof(DelegateSupport).GetMethod(nameof(DelegateSupport.ConvertDelegate));
-            var transpilerMethod = typeof(DelegateSupportPatch).GetMethod(nameof(DelegateSupportPatch.Transpiler));
+            MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
+            var methodBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
+                .MakeGenericMethod(typeof(Il2CppObjectBase));
+            var transpilerMethod = typeof(DelegateSupport_ConvertDelegatePatch)
+                .GetMethod(nameof(DelegateSupport_ConvertDelegatePatch.Transpiler));
             harmony.Patch(methodBase, null, null, new(transpilerMethod));
+
+            MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::GenerateNativeToManagedTrampoline()");
+            methodBase = typeof(DelegateSupport).GetMethod("GenerateNativeToManagedTrampoline");
+            transpilerMethod = typeof(DelegateSupport_GenerateNativeToManagedTrampolinePatch)
+                .GetMethod(nameof(DelegateSupport_GenerateNativeToManagedTrampolinePatch.Transpiler));
+            harmony.Patch(methodBase, null, null, new(transpilerMethod));
+
+            MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport+MethodSignature::MethodSignature()");
+            foreach (var item in typeof(DelegateSupport).Assembly.GetType("Il2CppInterop.Runtime.DelegateSupport+MethodSignature")!.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.CreateInstance | BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.InvokeMethod))
+            {
+                MelonLogger.Msg(item.FullDescription());
+            }
+            methodBase = typeof(DelegateSupport).Assembly.GetType("Il2CppInterop.Runtime.DelegateSupport+MethodSignature")!
+                .GetMethod(".ctor", new Type[] { typeof(Il2CppSystem.Reflection.MethodInfo), typeof(bool) });
+            MelonLogger.Msg(methodBase);
+            transpilerMethod = typeof(DelegateSupport_MethodSignature_MethodSignature)
+                .GetMethod(nameof(DelegateSupport_MethodSignature_MethodSignature.Transpiler));
+            harmony.Patch(methodBase, null, null, new(transpilerMethod));
+            MelonLogger.Msg("All Il2CppInterop DelegateSupport patches complete");
         }
     }
 
-    internal static class DelegateSupportPatch
+    public static class DelegateSupport_ConvertDelegatePatch
     {
-        internal static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
 
@@ -32,9 +55,33 @@ namespace HousePartyPlugin
         }
     }
 
-    internal static class DelegateConverterPatchHelpers
+    public static class DelegateSupport_GenerateNativeToManagedTrampolinePatch
     {
-        internal static unsafe Il2CppSystem.Reflection.MethodInfo GetMethodFix(this Il2CppSystem.Type type, MethodInfo predicate)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+
+
+
+            return codes.AsEnumerable();
+        }
+    }
+
+    public static class DelegateSupport_MethodSignature_MethodSignature
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+
+
+
+            return codes.AsEnumerable();
+        }
+    }
+
+    public static class DelegateConverterPatchHelpers
+    {
+        public static unsafe Il2CppSystem.Reflection.MethodInfo GetMethodFix(this Il2CppSystem.Type type, MethodInfo predicate)
         {
             var nativeTypeClass = IL2CPP.il2cpp_object_get_class(type.Pointer);
             var nativeGetMethod = IL2CPP.il2cpp_class_get_method_from_name(nativeTypeClass, "GetMethod", 1);
