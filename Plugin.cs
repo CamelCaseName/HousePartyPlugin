@@ -71,7 +71,7 @@ namespace HousePartyPlugin
             //it does its logging in the transpiler, no need to spam one more Msg();
 
             //patching the il2cppinterop delegate converter
-            DelegateConverterPatch.Apply();
+            DelegateConverterPatch.Apply(HarmonyInstance);
             MelonLogger.Msg("Patched the DelegateConverter");
         }
 
@@ -87,7 +87,7 @@ namespace HousePartyPlugin
         public override void OnPreSupportModule()
         {
             //patch the scenehandler
-            SceneHandlerPatch.ApplyPatch(HarmonyInstance);
+            SceneHandlerPatch.Apply(HarmonyInstance);
             MelonLogger.Msg("Patched the SceneHandler");
 
             //end it

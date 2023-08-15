@@ -44,7 +44,7 @@ namespace HousePartyPlugin
 
     internal class SceneHandlerPatch
     {
-        public static void ApplyPatch(HarmonyLib.Harmony harmony)
+        public static void Apply(HarmonyLib.Harmony harmony)
         {
             var assembly = Assembly.Load(File.ReadAllBytes(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
             var type = assembly.GetType("MelonLoader.Support.SceneHandler")!;
