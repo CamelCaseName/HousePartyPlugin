@@ -1,14 +1,64 @@
 ﻿using MelonLoader;
+using System;
+using System.Data.SqlTypes;
+using System.Diagnostics.Tracing;
+using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Xml.Linq;
 
 [assembly: HarmonyDontPatchAll]
 [assembly: MelonInfo(typeof(HousePartyPlugin.Plugin), "House Party Compatibility Layer", "1.0.0", "Lenny")]
 [assembly: MelonColor(255, 120, 20, 140)]
+[assembly: MelonGame("Eek", "House Party")]
 
 namespace HousePartyPlugin
 {
     public class Plugin : MelonPlugin
     {
+        public Plugin()
+        {
+            SetOurResolveHandlerAtFront();
+        }
+
+        private static void SetOurResolveHandlerAtFront()
+        {
+            BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;
+            FieldInfo? field = null;
+
+            Type domainType = typeof(AssemblyLoadContext);
+
+            while (field is null)
+            {
+                if (domainType is not null)
+                {
+                    field = domainType.GetField("AssemblyResolve", flags);
+                }
+                else
+                {
+                    MelonLogger.Error("domainType got set to null for the AssemblyResolve event was null");
+                    return;
+                }
+                if (field is null)
+                    domainType = domainType.BaseType!;
+            }
+
+            MulticastDelegate resolveDelegate = (MulticastDelegate)field.GetValue(null)!;
+            Delegate[] subscribers = resolveDelegate.GetInvocationList();
+
+            Delegate currentDelegate = resolveDelegate;
+            for (int i = 0; i < subscribers.Length; i++)
+                currentDelegate = Delegate.RemoveAll(currentDelegate, subscribers[i])!;
+
+            Delegate[] newSubscriptions = new Delegate[subscribers.Length + 1];
+            newSubscriptions[0] = (ResolveEventHandler)AssemblyResolveEventListener!;
+            Array.Copy(subscribers, 0, newSubscriptions, 1, subscribers.Length);
+
+            currentDelegate = Delegate.Combine(newSubscriptions)!;
+
+            field.SetValue(null, currentDelegate);
+        }
+
         private const string ForcedCpp2ILVersion = "2022.1.0-pre-release.12";
 
         public override void OnPreInitialization()
@@ -16,13 +66,30 @@ namespace HousePartyPlugin
             //inject a new unhollower version, old one doesnt work on house party
             ForceDumperVersion();
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
+            DeleteOldIl2CppAssemblies();
+            MelonLogger.Msg("Deleted old Il2CppAssemblies");
+        }
 
+        private static void DeleteOldIl2CppAssemblies()
+        {
+            if (Directory.Exists(".\\MelonLoader\\Il2CppAssemblies"))
+                foreach (var file in Directory.GetFiles(".\\MelonLoader\\Il2CppAssemblies"))
+                {
+                    File.Delete(file);
+                }
+        }
+
+        public override void OnPreSupportModule()
+        {
             //patch the scenehandler
-            MelonLogger.Msg("Patching the SceneHandler");
-            PatchSceneHandler();
+            SceneHandlerPatch.ApplyPatch(HarmonyInstance);
+            MelonLogger.Msg("Patched the SceneHandler");
+
             //patching il2cppinterop.runtime
-            MelonLogger.Msg("Unhooking the Hook on hkGenericMethodGetMethod from Il2CppInterop");
             HarmonyInstance.PatchAll();
+            MelonLogger.Msg("Unhooked the Hook on hkGenericMethodGetMethod from Il2CppInterop");
+
+            //end it
             Unregister("All patches done, unregistered plugin");
         }
 
@@ -32,16 +99,23 @@ namespace HousePartyPlugin
             ForceDumperVersion.SetValue(null, ForcedCpp2ILVersion);
         }
 
-        private void PatchSceneHandler()
+        private static Assembly AssemblyResolveEventListener(object sender, ResolveEventArgs args)
         {
-            var assembly = Assembly.Load(File.ReadAllBytes(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
-            var type = assembly.GetType("MelonLoader.Support.SceneHandler")!;
+            if (args is null) return null!;
 
-            var loadType = typeof(SceneHandlerPatch_OnSceneLoad);
-            var unloadType = typeof(SceneHandlerPatch_OnSceneUnload);
-
-            HarmonyInstance.Patch(type.GetMethod("OnSceneLoad"), new(loadType.GetMethod("Prefix")));
-            HarmonyInstance.Patch(type.GetMethod("OnSceneUnload"), new(unloadType.GetMethod("Prefix")));
+            var name = "HousePartyPlugin.Resources." + args.Name[..args.Name.IndexOf(',')] + ".dll";
+            using Stream? str = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
+            if (str is not null)
+            {
+                var asmBytes = new byte[str.Length];
+                str.Read(asmBytes, 0, asmBytes.Length);
+                return Assembly.Load(asmBytes);
+            }
+            else
+            {
+                MelonLogger.Error("Assembly " + name + " not found in resources!");
+                return null!;
+            }
         }
     }
 }

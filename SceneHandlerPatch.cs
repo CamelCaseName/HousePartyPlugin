@@ -1,15 +1,17 @@
 ﻿using MelonLoader;
+using System.IO;
+using System.Reflection;
 using UnityEngine.SceneManagement;
 
 namespace HousePartyPlugin
 {
-    internal static class SceneHandlerPatch_OnSceneLoad
+    internal class SceneHandlerPatch_OnSceneLoad
     {
         public static bool Prefix(Scene scene, LoadSceneMode mode)
         {
-            if (SceneSupport.Main_get_obj() is null)
+            if (PluginSupport.Main_get_obj() is null)
             {
-                SceneSupport.CreateMainGameObject();
+                PluginSupport.CreateMainGameObject();
             }
 
             if ((Scene?)scene is null)
@@ -17,14 +19,14 @@ namespace HousePartyPlugin
 
             string name = scene.GetName();
             MelonDebug.Msg(name + " loaded as " + mode.ToString());
-            SceneSupport.Main_get_interface().OnSceneWasLoaded(scene.buildIndex, name);
-            SceneSupport.SceneHandler_sceneLoaded_Enqueue(SceneSupport.GetNewSceneInitEvent(scene.buildIndex, name));
+            PluginSupport.Main_get_interface().OnSceneWasLoaded(scene.buildIndex, name);
+            PluginSupport.SceneHandler_sceneLoaded_Enqueue(PluginSupport.GetNewSceneInitEvent(scene.buildIndex, name));
 
             return false;
         }
     }
 
-    internal static class SceneHandlerPatch_OnSceneUnload
+    internal class SceneHandlerPatch_OnSceneUnload
     {
         public static bool Prefix(Scene scene)
         {
@@ -33,10 +35,25 @@ namespace HousePartyPlugin
 
             string name = scene.GetName();
             MelonDebug.Msg(name + " unloaded");
-            SceneSupport.Main_get_interface().OnSceneWasUnloaded(scene.buildIndex, name);
+            PluginSupport.Main_get_interface().OnSceneWasUnloaded(scene.buildIndex, name);
 
             return false;
         }
 
+    }
+
+    internal class SceneHandlerPatch
+    {
+        public static void ApplyPatch(HarmonyLib.Harmony harmony)
+        {
+            var assembly = Assembly.Load(File.ReadAllBytes(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
+            var type = assembly.GetType("MelonLoader.Support.SceneHandler")!;
+
+            var loadType = typeof(SceneHandlerPatch_OnSceneLoad);
+            var unloadType = typeof(SceneHandlerPatch_OnSceneUnload);
+
+            harmony.Patch(type.GetMethod("OnSceneLoad"), new(loadType.GetMethod("Prefix")));
+            harmony.Patch(type.GetMethod("OnSceneUnload"), new(unloadType.GetMethod("Prefix")));
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Il2CppInterop.Runtime;
 using MelonLoader;
+using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -41,6 +42,10 @@ namespace HousePartyPlugin
             Il2CppException.RaiseExceptionIfNecessary(error);
             return IL2CPP.Il2CppStringToManaged(nativeResult)!;
         }
+    }
+
+    internal class PluginSupport
+    {
 
         public static ISupportModule_From Main_get_interface()
         {
