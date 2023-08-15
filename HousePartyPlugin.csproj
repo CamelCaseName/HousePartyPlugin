@@ -17,11 +17,13 @@
 
   <ItemGroup>
     <None Remove="Resources\Il2CppInterop.HarmonySupport.dll" />
+    <None Remove="Resources\Il2Cppmscorlib.dll" />
     <None Remove="Resources\UnityEngine.CoreModule.dll" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Il2CppInterop.HarmonySupport.dll" />
+    <EmbeddedResource Include="Resources\Il2Cppmscorlib.dll" />
     <EmbeddedResource Include="Resources\UnityEngine.CoreModule.dll" />
   </ItemGroup>
 
