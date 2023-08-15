@@ -1,11 +1,8 @@
 ﻿using MelonLoader;
 using System;
-using System.Data.SqlTypes;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Xml.Linq;
 
 [assembly: HarmonyDontPatchAll]
 [assembly: MelonInfo(typeof(HousePartyPlugin.Plugin), "House Party Compatibility Layer", "1.0.0", "Lenny")]
@@ -68,6 +65,14 @@ namespace HousePartyPlugin
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
             DeleteOldIl2CppAssemblies();
             MelonLogger.Msg("Deleted old Il2CppAssemblies");
+
+            //patching il2cppinterop.runtime
+            HarmonyInstance.PatchAll();
+            //it does its logging in the transpiler, no need to spam one more Msg();
+
+            //patching the il2cppinterop delegate converter
+            DelegateConverterPatch.Apply();
+            MelonLogger.Msg("Patched the DelegateConverter");
         }
 
         private static void DeleteOldIl2CppAssemblies()
@@ -84,10 +89,6 @@ namespace HousePartyPlugin
             //patch the scenehandler
             SceneHandlerPatch.ApplyPatch(HarmonyInstance);
             MelonLogger.Msg("Patched the SceneHandler");
-
-            //patching il2cppinterop.runtime
-            HarmonyInstance.PatchAll();
-            MelonLogger.Msg("Unhooked the Hook on hkGenericMethodGetMethod from Il2CppInterop");
 
             //end it
             Unregister("All patches done, unregistered plugin");
