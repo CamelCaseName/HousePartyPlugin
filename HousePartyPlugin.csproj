@@ -39,8 +39,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>G:\SteamLibrary\steamapps\common\House Party\MelonLoader\Dependencies\Il2CppAssemblyGenerator\UnityDependencies\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>Resources\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -18,7 +18,7 @@ namespace HousePartyPlugin
                 return false;
 
             string name = scene.GetName();
-            MelonDebug.Msg(name + " loaded as " + mode.ToString());
+            MelonLogger.Msg($"{name} loaded (mode: {mode})");
             PluginSupport.Main_get_interface().OnSceneWasLoaded(scene.buildIndex, name);
             PluginSupport.SceneHandler_sceneLoaded_Enqueue(PluginSupport.GetNewSceneInitEvent(scene.buildIndex, name));
 
@@ -34,7 +34,7 @@ namespace HousePartyPlugin
                 return false;
 
             string name = scene.GetName();
-            MelonDebug.Msg(name + " unloaded");
+            MelonLogger.Msg($"{name} unloaded");
             PluginSupport.Main_get_interface().OnSceneWasUnloaded(scene.buildIndex, name);
 
             return false;
