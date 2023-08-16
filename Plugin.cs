@@ -9,6 +9,7 @@ using System.Runtime.Loader;
 [assembly: MelonInfo(typeof(HousePartyPlugin.Plugin), "House Party Compatibility Layer", "1.0.0", "Lenny")]
 [assembly: MelonColor(255, 120, 20, 140)]
 [assembly: MelonGame("Eek", "House Party")]
+[assembly: VerifyLoaderVersion(0, 6, 1, true)]
 
 namespace HousePartyPlugin
 {
