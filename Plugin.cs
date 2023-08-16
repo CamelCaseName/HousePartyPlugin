@@ -76,13 +76,6 @@ namespace HousePartyPlugin
             //does its own logging
         }
 
-        public override void OnApplicationQuit()
-        {
-            //todo is this good?
-            DeleteOldIl2CppAssemblies();
-            MelonLogger.Msg("Deleted Il2CppAssemblies");
-        }
-
         private static void DeleteOldIl2CppAssemblies()
         {
             if (Directory.Exists(".\\MelonLoader\\Il2CppAssemblies"))
@@ -107,8 +100,7 @@ namespace HousePartyPlugin
             SceneHandlerPatch.Apply(HarmonyInstance);
             MelonLogger.Msg("Patched the SceneHandler");
 
-            //end it
-            Unregister("All patches done, unregistered plugin");
+            //after this the new files are generated
             AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
         }
 
