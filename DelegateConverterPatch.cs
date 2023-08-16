@@ -51,7 +51,8 @@ namespace HousePartyPlugin
             var from = typeof(Il2CppType).GetMethod(nameof(Il2CppType.From), new Type[] { typeof(Type) });
             var getMethodFix = typeof(DelegateConverterPatchHelpers).GetMethod(nameof(DelegateConverterPatchHelpers.GetMethodFix));
             var getFullNameFix = typeof(DelegateConverterPatchHelpers).GetMethod(nameof(DelegateConverterPatchHelpers.GetFullNameFix));
-            var get_FullName = typeof(Il2CppSystem.Type).GetMethod("get_FullName", BindingFlags.NonPublic | BindingFlags.Instance);
+            var get_FullName = typeof(Il2CppSystem.Type).GetMethod("get_FullName", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static);
+            
             //patch getparameters to internal
             for (int i = 0; i < codes.Count; i++)
             {
@@ -95,7 +96,7 @@ namespace HousePartyPlugin
                     codes[i - 3] = new CodeInstruction(OpCodes.Call, from) { blocks = codes[i - 3].blocks, labels = codes[i - 3].labels };
                     codes[i - 2] = new CodeInstruction(OpCodes.Ldloc_0) { blocks = codes[i - 2].blocks, labels = codes[i - 2].labels };
                     codes[i - 1] = new CodeInstruction(OpCodes.Call, getMethodFix) { blocks = codes[i - 1].blocks, labels = codes[i - 1].labels };
-                    MelonLogger.Msg("Patched DelegateSupport.ConvertDelegate to use the fixed getmethod");
+                    MelonLogger.Msg("Patched DelegateSupport.ConvertDelegate to use the fixed GetMethod");
                 }
             }
 
@@ -113,6 +114,7 @@ namespace HousePartyPlugin
                     }
                 }
             }
+
             MelonLogger.Error("Couldn't patch DelegateSupport.ConvertDelegate");
             return instructions;
         }

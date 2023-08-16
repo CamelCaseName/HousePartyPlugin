@@ -1,5 +1,4 @@
-﻿using HarmonyLib.Tools;
-using MelonLoader;
+﻿using MelonLoader;
 using System;
 using System.IO;
 using System.Reflection;
@@ -110,6 +109,7 @@ namespace HousePartyPlugin
 
             //end it
             Unregister("All patches done, unregistered plugin");
+            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
         }
 
         private static void ForceDumperVersion()
