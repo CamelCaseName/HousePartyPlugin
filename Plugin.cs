@@ -75,6 +75,13 @@ namespace HousePartyPlugin
             //does its own logging
         }
 
+        public override void OnApplicationQuit()
+        {
+            //todo is this good?
+            DeleteOldIl2CppAssemblies();
+            MelonLogger.Msg("Deleted Il2CppAssemblies");
+        }
+
         private static void DeleteOldIl2CppAssemblies()
         {
             if (Directory.Exists(".\\MelonLoader\\Il2CppAssemblies"))
@@ -86,7 +93,8 @@ namespace HousePartyPlugin
                         File.Delete(file);
                     }
                 }
-                catch {
+                catch
+                {
                     MelonLogger.Error("Please go to Melonloader/Il2CppAssemblies and delete all files in that folder!");
                 }
             }
