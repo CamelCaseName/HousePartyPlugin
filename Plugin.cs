@@ -1,6 +1,8 @@
-﻿using MelonLoader;
+﻿using System.Collections.Generic;
+using MelonLoader;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -14,9 +16,13 @@ namespace HousePartyPlugin
 {
     public class Plugin : MelonPlugin
     {
-        public Plugin()
+        private readonly List<AssemblyLoadContext> contexts = new();
+
+        static Plugin()
         {
+            AppDomain.CurrentDomain.ResourceResolve += new(AssemblyResolveEventListener!);
             SetOurResolveHandlerAtFront();
+            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
         }
 
         private static void SetOurResolveHandlerAtFront()
@@ -64,9 +70,10 @@ namespace HousePartyPlugin
             //inject a new unhollower version, old one doesnt work on house party
             ForceDumperVersion();
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
-            DeleteOldIl2CppAssemblies();
-            MelonLogger.Msg("Deleted old Il2CppAssemblies");
+        }
 
+        public override void OnPreSupportModule()
+        {
             //patching il2cppinterop.runtime
             HarmonyInstance.PatchAll();
             //it does its logging in the transpiler, no need to spam one more Msg();
@@ -74,34 +81,21 @@ namespace HousePartyPlugin
             //patching the il2cppinterop delegate converter
             DelegateConverterPatch.Apply(HarmonyInstance);
             //does its own logging
-        }
-
-        private static void DeleteOldIl2CppAssemblies()
-        {
-            if (Directory.Exists(".\\MelonLoader\\Il2CppAssemblies"))
-            {
-                try
-                {
-                    foreach (var file in Directory.GetFiles(".\\MelonLoader\\Il2CppAssemblies"))
-                    {
-                        File.Delete(file);
-                    }
-                }
-                catch
-                {
-                    MelonLogger.Error("Please go to Melonloader/Il2CppAssemblies and delete all files in that folder!");
-                }
-            }
-        }
-
-        public override void OnPreSupportModule()
-        {
-            //patch the scenehandler
-            SceneHandlerPatch.Apply(HarmonyInstance);
-            MelonLogger.Msg("Patched the SceneHandler");
 
             //after this the new files are generated
             AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
+
+            foreach (var context in contexts)
+            {
+                MelonLogger.Msg("Unloading " + context.Name + "from our own context");
+                context.Unload();
+                MelonLogger.Msg("Loading " + context.Name + " into the default context");
+                AssemblyLoadContext.Default.LoadFromAssemblyName(context.Assemblies.First().GetName());
+            }
+
+            //patch the scenehandler
+            SceneHandlerPatch.Apply(HarmonyInstance);
+            MelonLogger.Msg("Patched the SceneHandler");
         }
 
         private static void ForceDumperVersion()
@@ -118,10 +112,9 @@ namespace HousePartyPlugin
             using Stream? str = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
             if (str is not null)
             {
-                var asmBytes = new byte[str.Length];
-                str.Read(asmBytes, 0, asmBytes.Length);
+                var context = new AssemblyLoadContext(name, true);
                 MelonLogger.Msg($"Loaded {args.Name} from our embedded resources");
-                return Assembly.Load(asmBytes);
+                return context.LoadFromStream(str);
             }
             else
             {

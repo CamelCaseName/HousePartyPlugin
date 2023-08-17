@@ -5,18 +5,26 @@ using Il2CppInterop.Runtime.Runtime;
 using MelonLoader;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Xml.Linq;
 using Il2CppException = Il2CppInterop.Runtime.Il2CppException;
 
 namespace HousePartyPlugin
 {
     internal static class DelegateConverterPatch
     {
+        public static Assembly? Il2Cpp;
         internal static void Apply(HarmonyLib.Harmony harmony)
         {
+            //loading the il2cpp
+            var asmLoadContext = new AssemblyLoadContext("DelegateConverterPatchContext", true);
+            Il2Cpp = asmLoadContext.LoadFromAssemblyPath(".\\MelonLoader\\Il2CppAssemblies\\Il2Cppmscorlib.dll");
+
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
             MethodBase convertDelegateBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
                 .MakeGenericMethod(typeof(Il2CppObjectBase));
@@ -32,7 +40,7 @@ namespace HousePartyPlugin
 
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport+MethodSignature::MethodSignature()");
             MethodBase MethodSignatureBase = MethodBase.GetMethodFromHandle(typeof(DelegateSupport).Assembly.GetType("Il2CppInterop.Runtime.DelegateSupport+MethodSignature")!
-                .GetConstructor(new Type[] { typeof(Il2CppSystem.Reflection.MethodInfo), typeof(bool) })!.MethodHandle)!;
+                .GetConstructor(new[] { Il2Cpp.GetType("Il2CppSystem.Reflection.MethodInfo")!, typeof(bool) })!.MethodHandle)!;
             var methodSignaturetranspilerMethod = typeof(DelegateSupport_MethodSignature_MethodSignature)
                 .GetMethod(nameof(DelegateSupport_MethodSignature_MethodSignature.Transpiler));
             harmony.Patch(MethodSignatureBase, null, null, new(methodSignaturetranspilerMethod));
@@ -45,14 +53,14 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = typeof(Il2CppSystem.Reflection.MethodInfo).GetMethod(nameof(Il2CppSystem.Reflection.MethodInfo.GetParameters));
-            var getParametersInternal = typeof(Il2CppSystem.Reflection.MethodInfo).GetMethod(nameof(Il2CppSystem.Reflection.MethodInfo.GetParametersInternal));
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParameters");
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParametersInternal");
             var getTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
-            var from = typeof(Il2CppType).GetMethod(nameof(Il2CppType.From), new Type[] { typeof(Type) });
+            var from = typeof(Il2CppType).GetMethod(nameof(Il2CppType.From), new[] { typeof(Type) });
             var getMethodFix = typeof(DelegateConverterPatchHelpers).GetMethod(nameof(DelegateConverterPatchHelpers.GetMethodFix));
-            var getFullNameFix = typeof(DelegateConverterPatchHelpers).GetMethod(nameof(DelegateConverterPatchHelpers.GetFullNameFix));
-            var get_FullName = typeof(Il2CppSystem.Type).GetMethod("get_FullName", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static);
-            
+            var FullNameFix = typeof(DelegateConverterPatchHelpers).GetMethod(nameof(DelegateConverterPatchHelpers.FullNameFix));
+            var get_FullName = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Type")!.GetMethod("get_FullName", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static);
+
             //patch getparameters to internal
             for (int i = 0; i < codes.Count; i++)
             {
@@ -108,7 +116,7 @@ namespace HousePartyPlugin
                     //nativeType.FullName
                     if (((MethodBase)codes[i].operand!).FullDescription() == get_FullName.FullDescription())
                     {
-                        codes[i] = new CodeInstruction(OpCodes.Call, getFullNameFix) { blocks = codes[i].blocks, labels = codes[i].labels };
+                        codes[i] = new CodeInstruction(OpCodes.Call, FullNameFix) { blocks = codes[i].blocks, labels = codes[i].labels };
                         MelonLogger.Msg("Patched DelegateSupport.ConvertDelegate to use the safe il2cpp internal way of getting the type name");
                         return codes.AsEnumerable();
                     }
@@ -125,8 +133,8 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = typeof(Il2CppSystem.Reflection.MethodInfo).GetMethod(nameof(Il2CppSystem.Reflection.MethodInfo.GetParameters));
-            var getParametersInternal = typeof(Il2CppSystem.Reflection.MethodInfo).GetMethod(nameof(Il2CppSystem.Reflection.MethodInfo.GetParametersInternal));
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParameters");
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParametersInternal");
 
             for (int i = 0; i < codes.Count; i++)
             {
@@ -151,8 +159,8 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = typeof(Il2CppSystem.Reflection.MethodInfo).GetMethod(nameof(Il2CppSystem.Reflection.MethodInfo.GetParameters));
-            var getParametersInternal = typeof(Il2CppSystem.Reflection.MethodInfo).GetMethod(nameof(Il2CppSystem.Reflection.MethodInfo.GetParametersInternal));
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParameters");
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParametersInternal");
             for (int i = 0; i < codes.Count; i++)
             {
                 if (codes[i].opcode == OpCodes.Callvirt)
@@ -172,9 +180,22 @@ namespace HousePartyPlugin
 
     public static class DelegateConverterPatchHelpers
     {
-        public static unsafe Il2CppSystem.Reflection.MethodInfo GetMethodFix(this Il2CppSystem.Type type, MethodInfo predicate)
+        /// <summary>
+        /// only call on Il2CppSystem.Type
+        /// </summary>
+        /// <param name="type">Il2CppSystem.Type object</param>
+        /// <param name="predicate">Methodinfo where it searches for one with the same name and arguments</param>
+        /// <returns></returns>
+        public static unsafe object GetMethodFix(this object type, MethodInfo predicate)
         {
-            var nativeTypeClass = IL2CPP.il2cpp_object_get_class(type.Pointer);
+            if (type.GetType().ToString() != DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Type")!.ToString())
+            {
+                MelonLogger.Error("Type mismatch in GetMethodFix extension method");
+                return "error";
+            }
+            var pointerGetter = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Il2CppObjectBase")!.GetMethod("get_Pointer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            IntPtr pointer = (IntPtr)pointerGetter.Invoke(type, null)!;
+            var nativeTypeClass = IL2CPP.il2cpp_object_get_class(pointer);
             var nativeGetMethod = IL2CPP.il2cpp_class_get_method_from_name(nativeTypeClass, "GetMethod", 2);
             var exception = IntPtr.Zero;
             int flags = (int)(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase);
@@ -182,18 +203,34 @@ namespace HousePartyPlugin
             var parameters = stackalloc IntPtr[2];
             *parameters = IL2CPP.ManagedStringToIl2Cpp(predicate.Name);
             *(parameters + sizeof(IntPtr)) = (IntPtr)(&flags);
-            var nativeMethodInfoObject = IL2CPP.il2cpp_runtime_invoke(nativeGetMethod, type.Pointer, (void**)parameters, ref exception);
+            var nativeMethodInfoObject = IL2CPP.il2cpp_runtime_invoke(nativeGetMethod, pointer, (void**)parameters, ref exception);
             Il2CppException.RaiseExceptionIfNecessary(exception);
             if (nativeMethodInfoObject != IntPtr.Zero)
-
-                return Il2CppObjectPool.Get<Il2CppSystem.Reflection.MethodInfo>(nativeMethodInfoObject);
+            {
+                var methodInfo = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!;
+                var objectPoolGet = typeof(Il2CppObjectPool).GetMethod(nameof(Il2CppObjectPool.Get))!;
+                var objectPoolGetmethodInfo = objectPoolGet.MakeGenericMethod(new[] { methodInfo });
+                return objectPoolGetmethodInfo.Invoke(null, new object[] { nativeMethodInfoObject })!;
+            }
             else
                 throw new MissingMethodException("method was not found");
         }
 
-        public static unsafe string GetFullNameFix(this Il2CppSystem.Type type)
+        /// <summary>
+        /// only call on Il2CppSystem.Type
+        /// </summary>
+        /// <param name="type">Il2CppSystem.Type object</param>
+        /// <returns></returns>
+        public static unsafe string FullNameFix(this object type)
         {
-            return Marshal.PtrToStringAnsi(IL2CPP.il2cpp_type_get_name(type._impl.value))!;
+            if (type.GetType().ToString() != DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Type")!.ToString())
+            {
+                MelonLogger.Error("Type mismatch in FullNameFix extension method");
+                return "error";
+            }
+            var get__impl = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Type")!.GetMethod("get__impl", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var value = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.RuntimeTypeHandle")!.GetField("value")!;
+            return Marshal.PtrToStringAnsi(IL2CPP.il2cpp_type_get_name((IntPtr)value.GetValue(get__impl.Invoke(type, null)!)!))!;
         }
     }
 }

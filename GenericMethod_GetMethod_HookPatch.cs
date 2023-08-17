@@ -15,7 +15,6 @@ namespace HousePartyPlugin
         {
             bool patched = false;
             var codes = new List<CodeInstruction>(instructions);
-            int startIndex = -1;
             if (typeof(ClassInjector).Assembly.GetType("Il2CppInterop.Runtime.Injection.Hook`1") is null)
             {
                 //old il2cppinterop pre commit a23fe71 => https://github.com/BepInEx/Il2CppInterop/commit/a24fe7166ebb0c8afb41bc04d3df673627b4350f
@@ -31,20 +30,15 @@ namespace HousePartyPlugin
                         {
                             if (codes[i + 3].StoresField(GenericMethodGetMethod))
                             {
-                                startIndex = i;
+                                codes[i].opcode = OpCodes.Nop;
+                                codes[i + 1].opcode = OpCodes.Nop;
+                                codes[i + 2].opcode = OpCodes.Nop;
+                                codes[i + 3].opcode = OpCodes.Nop;
+                                patched = true;
                                 break;
                             }
                         }
                     }
-                }
-
-                if (startIndex > 0)
-                {
-                    codes[startIndex].opcode = OpCodes.Nop;
-                    codes[startIndex + 1].opcode = OpCodes.Nop;
-                    codes[startIndex + 2].opcode = OpCodes.Nop;
-                    codes[startIndex + 3].opcode = OpCodes.Nop;
-                    patched = true;
                 }
             }
             else
@@ -60,17 +54,12 @@ namespace HousePartyPlugin
                     {
                         if (codes[i + 1].Calls(applyMethod))
                         {
-                            startIndex = i;
+                            codes[i].opcode = OpCodes.Nop;
+                            codes[i + 1].opcode = OpCodes.Nop;
+                            patched = true;
                             break;
                         }
                     }
-                }
-
-                if (startIndex > 0)
-                {
-                    codes[startIndex].opcode = OpCodes.Nop;
-                    codes[startIndex + 1].opcode = OpCodes.Nop;
-                    patched = true;
                 }
             }
             if (!patched)

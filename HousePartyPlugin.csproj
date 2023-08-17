@@ -38,17 +38,12 @@
       <HintPath>Resources\Il2CppInterop.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Il2Cppmscorlib">
-      <HintPath>Resources\Il2Cppmscorlib.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="MelonLoader">
       <HintPath>G:\SteamLibrary\steamapps\common\House Party\MelonLoader\net6\MelonLoader.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>Resources\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
     </Reference>
   </ItemGroup>
 
