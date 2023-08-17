@@ -112,13 +112,14 @@ namespace HousePartyPlugin
             using Stream? str = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
             if (str is not null)
             {
-                var context = new AssemblyLoadContext(name, true);
+                var context = new AssemblyLoadContext(name, false);
                 MelonLogger.Msg($"Loaded {args.Name} from our embedded resources");
                 return context.LoadFromStream(str);
             }
             else
             {
-                MelonLogger.Error($"Assembly {args.Name} not found in resources!");
+                if (!args.Name.Contains("System"))
+                    MelonLogger.Error($"Assembly {args.Name} not found in resources!");
                 return null!;
             }
         }

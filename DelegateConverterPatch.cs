@@ -4,12 +4,10 @@ using Il2CppInterop.Runtime.InteropTypes;
 using MelonLoader;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Loader;
-using System.Xml.Linq;
 
 namespace HousePartyPlugin
 {
@@ -19,7 +17,7 @@ namespace HousePartyPlugin
         internal static void Apply(HarmonyLib.Harmony harmony)
         {
             //loading the il2cpp
-            var asmLoadContext = new AssemblyLoadContext("DelegateConverterPatchContext", true);
+            var asmLoadContext = new AssemblyLoadContext("DelegateConverterPatchContext", false);
             Il2Cpp = asmLoadContext.LoadFromAssemblyPath($"{Assembly.GetExecutingAssembly().Location[..^"Plugins\\HousePartyPlugin.dll".Length]}MelonLoader\\Il2CppAssemblies\\Il2Cppmscorlib.dll")!;
 
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
@@ -41,7 +39,6 @@ namespace HousePartyPlugin
             {
                 if (item.GetParameters()[0].ParameterType.ToString() == Il2Cpp.GetType("Il2CppSystem.Reflection.MethodInfo")!.ToString())
                 {
-                    MelonLogger.Msg("found!");
                     MethodSignatureBase = MethodBase.GetMethodFromHandle(item.MethodHandle)!;
                 }
             }
@@ -57,8 +54,8 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParameters");
-            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParametersInternal");
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParameters");
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParametersInternal");
             var getTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
             var from = typeof(Il2CppType).GetMethod(nameof(Il2CppType.From), new[] { typeof(Type) });
             var getMethodFix = typeof(DelegateConverterPatchSupport).GetMethod(nameof(DelegateConverterPatchSupport.GetMethodFix));
@@ -137,8 +134,8 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParameters");
-            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParametersInternal");
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParameters");
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParametersInternal");
 
             for (int i = 0; i < codes.Count; i++)
             {
@@ -163,8 +160,8 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParameters");
-            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("Il2CppSystem.Reflection.MethodInfo.GetParametersInternal");
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParameters");
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParametersInternal");
             for (int i = 0; i < codes.Count; i++)
             {
                 if (codes[i].opcode == OpCodes.Callvirt)

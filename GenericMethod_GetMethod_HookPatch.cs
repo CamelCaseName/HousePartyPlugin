@@ -19,7 +19,7 @@ namespace HousePartyPlugin
             {
                 //old il2cppinterop pre commit a23fe71 => https://github.com/BepInEx/Il2CppInterop/commit/a24fe7166ebb0c8afb41bc04d3df673627b4350f
 
-                MelonLogger.Msg("Patching the Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Patching the Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
                 var InjectorHelpersType = typeof(ClassInjector).Assembly.GetType("Il2CppInterop.Runtime.Injection.InjectorHelpers")!;
                 var GenericMethodGetMethod = InjectorHelpersType.GetField("GenericMethodGetMethod", BindingFlags.Static | BindingFlags.NonPublic)!;
                 for (int i = 0; i < codes.Count; i++)
@@ -43,7 +43,7 @@ namespace HousePartyPlugin
             }
             else
             {
-                MelonLogger.Msg("Patching the new Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
+                MelonLogger.Msg("P[House_Party_Compatibility_Layer] atching the new Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
                 var InjectorHelpersType = typeof(ClassInjector).Assembly.GetType("Il2CppInterop.Runtime.Injection.InjectorHelpers")!;
                 var GenericMethodGetMethod = InjectorHelpersType.GetField("GenericMethodGetMethodHook", BindingFlags.Static | BindingFlags.NonPublic)!;
                 var GetMethodHookType = typeof(ClassInjector).Assembly.GetType("Il2CppInterop.Runtime.Injection.Hooks.GenericMethod_GetMethod_Hook")!;
@@ -63,9 +63,9 @@ namespace HousePartyPlugin
                 }
             }
             if (!patched)
-                MelonLogger.Msg("Couldnt patch the Il2CppInterop InjectorHelpers");
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Couldnt patch the Il2CppInterop InjectorHelpers");
             else
-                MelonLogger.Msg("Patched the Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched the Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
 
             return codes.AsEnumerable();
         }
