@@ -22,7 +22,7 @@ namespace HousePartyPlugin
 
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
             MethodBase convertDelegateBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
-                .MakeGenericMethod(typeof(Il2CppObjectBase));
+                .MakeGenericMethod(Il2Cpp!.GetType("Il2CppSystem.Delegate")!);
             var transpilerMethod = typeof(DelegateSupport_ConvertDelegatePatch)
                 .GetMethod(nameof(DelegateSupport_ConvertDelegatePatch.Transpiler));
             harmony.Patch(convertDelegateBase, null, null, new(transpilerMethod));
