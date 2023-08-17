@@ -17,16 +17,10 @@
 
   <ItemGroup>
     <None Remove="Resources\Il2CppInterop.HarmonySupport.dll" />
-    <None Remove="Resources\Il2CppInterop.Runtime.dll" />
-    <None Remove="Resources\Il2Cppmscorlib.dll" />
-    <None Remove="Resources\UnityEngine.CoreModule.dll" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Il2CppInterop.HarmonySupport.dll" />
-    <EmbeddedResource Include="Resources\Il2CppInterop.Runtime.dll" />
-    <EmbeddedResource Include="Resources\Il2Cppmscorlib.dll" />
-    <EmbeddedResource Include="Resources\UnityEngine.CoreModule.dll" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,9 +35,6 @@
     <Reference Include="MelonLoader">
       <HintPath>G:\SteamLibrary\steamapps\common\House Party\MelonLoader\net6\MelonLoader.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>Resources\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -3,16 +3,23 @@ using MelonLoader;
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace HousePartyPlugin
 {
     internal static class SceneSupport
     {
-        public static unsafe string GetName(this Scene scene)
+        /// <summary>
+        /// only call on UnityEngine.SceneManagement.Scene object!
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <returns></returns>
+        public static unsafe string GetName(this object scene)
         {
-            var nativeSceneClass = Il2CppClassPointerStore.GetNativeClassPointer(typeof(Scene));
+            if (scene.GetType().ToString() != Type.GetType("UnityEngine.SceneManagement.Scene")!.ToString())
+            {
+                throw new ArgumentException("Type mismatch in GetName extension method for unity scene");
+            }
+            var nativeSceneClass = Il2CppClassPointerStore.GetNativeClassPointer(Type.GetType("UnityEngine.SceneManagement.Scene"));
             if (nativeSceneClass == IntPtr.Zero)
             {
                 MelonDebug.Error("scene.get_name is missing and the workaround failed (class pointer was zero)");
@@ -26,7 +33,8 @@ namespace HousePartyPlugin
             }
             IntPtr* ptr = null;
             IntPtr error = IntPtr.Zero;
-            var sceneHandle = GCHandle.Alloc(scene.handle, GCHandleType.Pinned);
+            var getHandle = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_handle", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var sceneHandle = GCHandle.Alloc(getHandle.Invoke(scene, null)!, GCHandleType.Pinned);
             if (sceneHandle.AddrOfPinnedObject() == IntPtr.Zero)
             {
                 MelonDebug.Error("scene couldn't be pinned");
@@ -55,12 +63,12 @@ namespace HousePartyPlugin
             return (field.GetValue(null) as ISupportModule_From)!;
         }
 
-        public static GameObject Main_get_obj()
+        public static object Main_get_obj()
         {
             var assembly = Assembly.GetAssembly(typeof(MelonPlugin))!;
             var type = assembly.GetType("Melonloader.Suppport.Main")!;
             var field = type.GetField("obj")!;
-            return (field.GetValue(null) as GameObject)!;
+            return field.GetValue(null)!;
         }
 
         public static void SceneHandler_sceneLoaded_Enqueue(object sceneInitEvent)
@@ -86,11 +94,11 @@ namespace HousePartyPlugin
             indexField.SetValue(obj, buildIndex);
             return obj;
         }
-        public static GameObject CreateMainGameObject()
+        public static object CreateMainGameObject()
         {
             var type = Type.GetType("Melonloader.Support.SM_Component")!;
             var method = type.GetMethod("CreateMainGameObject")!;
-            return (GameObject)(method?.Invoke(null, Array.Empty<object>()))!;
+            return method?.Invoke(null, Array.Empty<object>())!;
         }
     }
 }

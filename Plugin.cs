@@ -74,6 +74,9 @@ namespace HousePartyPlugin
 
         public override void OnPreSupportModule()
         {
+            //after this the new files are generated
+            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
+
             //patching il2cppinterop.runtime
             HarmonyInstance.PatchAll();
             //it does its logging in the transpiler, no need to spam one more Msg();
@@ -82,20 +85,17 @@ namespace HousePartyPlugin
             DelegateConverterPatch.Apply(HarmonyInstance);
             //does its own logging
 
-            //after this the new files are generated
-            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
-
             foreach (var context in contexts)
             {
-                MelonLogger.Msg("Unloading " + context.Name + "from our own context");
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Unloading " + context.Name + "from our own context");
                 context.Unload();
-                MelonLogger.Msg("Loading " + context.Name + " into the default context");
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Loading " + context.Name + " into the default context");
                 AssemblyLoadContext.Default.LoadFromAssemblyName(context.Assemblies.First().GetName());
             }
 
             //patch the scenehandler
             SceneHandlerPatch.Apply(HarmonyInstance);
-            MelonLogger.Msg("Patched the SceneHandler");
+            MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched the SceneHandler");
         }
 
         private static void ForceDumperVersion()

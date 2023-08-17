@@ -1,26 +1,28 @@
 ﻿using MelonLoader;
+using System;
 using System.IO;
 using System.Reflection;
-using UnityEngine.SceneManagement;
 
 namespace HousePartyPlugin
 {
     internal class SceneHandlerPatch_OnSceneLoad
     {
-        public static bool Prefix(Scene scene, LoadSceneMode mode)
+        public static bool Prefix(object scene, object mode)
         {
             if (PluginSupport.Main_get_obj() is null)
             {
                 PluginSupport.CreateMainGameObject();
             }
 
-            if ((Scene?)scene is null)
+            if (scene is null)
                 return false;
 
             string name = scene.GetName();
             MelonLogger.Msg($"{name} loaded (mode: {mode})");
-            PluginSupport.Main_get_interface().OnSceneWasLoaded(scene.buildIndex, name);
-            PluginSupport.SceneHandler_sceneLoaded_Enqueue(PluginSupport.GetNewSceneInitEvent(scene.buildIndex, name));
+            var buildIndex = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_buildIndex", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            int index = (int)buildIndex.Invoke(scene, null)!;
+            PluginSupport.Main_get_interface().OnSceneWasLoaded(index, name);
+            PluginSupport.SceneHandler_sceneLoaded_Enqueue(PluginSupport.GetNewSceneInitEvent(index, name));
 
             return false;
         }
@@ -28,14 +30,15 @@ namespace HousePartyPlugin
 
     internal class SceneHandlerPatch_OnSceneUnload
     {
-        public static bool Prefix(Scene scene)
+        public static bool Prefix(object scene)
         {
-            if ((Scene?)scene is null)
+            if (scene is null)
                 return false;
 
             string name = scene.GetName();
             MelonLogger.Msg($"{name} unloaded");
-            PluginSupport.Main_get_interface().OnSceneWasUnloaded(scene.buildIndex, name);
+            var buildIndex = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_buildIndex", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            PluginSupport.Main_get_interface().OnSceneWasUnloaded((int)buildIndex.Invoke(scene, null)!, name);
 
             return false;
         }
