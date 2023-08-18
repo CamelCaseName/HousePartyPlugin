@@ -19,7 +19,7 @@ namespace HousePartyPlugin
         {
             if (type.GetType().ToString() != DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Type")!.ToString())
             {
-                throw new ArgumentException("Type mismatch in GetMethodFix extension method");
+                throw new ArgumentException("Type mismatch in GetConsole extension method");
             }
             var pointerGetter = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Il2CppObjectBase")!.GetMethod("get_Pointer", BindingFlags.Instance | BindingFlags.NonPublic)!;
             IntPtr pointer = (IntPtr)pointerGetter.Invoke(type, null)!;

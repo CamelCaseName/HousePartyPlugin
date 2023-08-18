@@ -1,61 +1,81 @@
-﻿using MelonLoader;
+﻿using HarmonyLib;
+using MelonLoader;
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace HousePartyPlugin
 {
-    internal class SceneHandlerPatch_OnSceneLoad
-    {
-        public static bool Prefix(object scene, object mode)
-        {
-            if (PluginSupport.Main_get_obj() is null)
-            {
-                PluginSupport.CreateMainGameObject();
-            }
-
-            if (scene is null)
-                return false;
-
-            string name = scene.GetName();
-            MelonLogger.Msg($"{name} loaded (mode: {mode})");
-            var buildIndex = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_buildIndex", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            int index = (int)buildIndex.Invoke(scene, null)!;
-            PluginSupport.Main_get_interface().OnSceneWasLoaded(index, name);
-            PluginSupport.SceneHandler_sceneLoaded_Enqueue(PluginSupport.GetNewSceneInitEvent(index, name));
-
-            return false;
-        }
-    }
-
-    internal class SceneHandlerPatch_OnSceneUnload
-    {
-        public static bool Prefix(object scene)
-        {
-            if (scene is null)
-                return false;
-
-            string name = scene.GetName();
-            MelonLogger.Msg($"{name} unloaded");
-            var buildIndex = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_buildIndex", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            PluginSupport.Main_get_interface().OnSceneWasUnloaded((int)buildIndex.Invoke(scene, null)!, name);
-
-            return false;
-        }
-    }
-
     internal class SceneHandlerPatch
     {
         public static void Apply(HarmonyLib.Harmony harmony)
         {
-            var assembly = Assembly.Load(File.ReadAllBytes(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
-            var type = assembly.GetType("MelonLoader.Support.SceneHandler")!;
+            var type = Type.GetType("MelonLoader.Support.SceneHandler")!;
+            MelonLogger.Msg("Patching the SceneHandler");
 
-            var loadType = typeof(SceneHandlerPatch_OnSceneLoad);
-            var unloadType = typeof(SceneHandlerPatch_OnSceneUnload);
+            harmony.Patch(type.GetMethod("OnSceneLoad"), null, null, new(typeof(SceneHandlerPatch_OnSceneLoad).GetMethod(nameof(SceneHandlerPatch_OnSceneLoad.Transpiler))) { debug = true });
+            harmony.Patch(type.GetMethod("OnSceneUnload"), null, null, new(typeof(SceneHandlerPatch_OnSceneUnload).GetMethod(nameof(SceneHandlerPatch_OnSceneUnload.Transpiler))) { debug = true });
+            
+        }
+    }
 
-            harmony.Patch(type.GetMethod("OnSceneLoad"), new(loadType.GetMethod("Prefix")));
-            harmony.Patch(type.GetMethod("OnSceneUnload"), new(unloadType.GetMethod("Prefix")));
+    internal static class SceneHandlerPatch_OnSceneLoad
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            try
+            {
+                var codes = new List<CodeInstruction>(instructions);
+                var getName = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_name", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                var getNameFix = typeof(SceneSupport).GetMethod(nameof(SceneSupport.GetName));
+
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].Calls(getName))
+                    {
+                        codes[i] = new CodeInstruction(OpCodes.Callvirt, getNameFix) { blocks = codes[i].blocks, labels = codes[i].labels };
+                    }
+                }
+
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched the Scene.Name to a safe Scene.GetName()");
+                return codes.AsEnumerable();
+            }
+            catch
+            {
+                MelonLogger.Error("[House_Party_Compatibility_Layer] Couldn't patch DelegateSupport.GenerateNativeToManagedTrampoline");
+                throw;
+            }
+        }
+    }
+
+    internal static class SceneHandlerPatch_OnSceneUnload
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            try
+            {
+                var codes = new List<CodeInstruction>(instructions);
+                var getName = Type.GetType("UnityEngine.SceneManagement.Scene")!.GetMethod("get_name", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                var getNameFix = typeof(SceneSupport).GetMethod(nameof(SceneSupport.GetName));
+
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].Calls(getName))
+                    {
+                        codes[i] = new CodeInstruction(OpCodes.Callvirt, getNameFix) { blocks = codes[i].blocks, labels = codes[i].labels };
+                    }
+                }
+
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched the Scene.Name to a safe Scene.GetName()");
+                return codes.AsEnumerable();
+            }
+            catch
+            {
+                MelonLogger.Error("[House_Party_Compatibility_Layer] Couldn't patch DelegateSupport.GenerateNativeToManagedTrampoline");
+                throw;
+            }
         }
     }
 }

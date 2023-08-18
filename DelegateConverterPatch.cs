@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using Il2CppInterop.Runtime;
-using Il2CppInterop.Runtime.InteropTypes;
 using MelonLoader;
 using System;
 using System.Collections.Generic;
@@ -20,18 +19,12 @@ namespace HousePartyPlugin
             var asmLoadContext = new AssemblyLoadContext("DelegateConverterPatchContext", false);
             Il2Cpp = asmLoadContext.LoadFromAssemblyPath($"{Assembly.GetExecutingAssembly().Location[..^"Plugins\\HousePartyPlugin.dll".Length]}MelonLoader\\Il2CppAssemblies\\Il2Cppmscorlib.dll")!;
 
-            MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
-            MethodBase convertDelegateBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
-                .MakeGenericMethod(Il2Cpp!.GetType("Il2CppSystem.Delegate")!);
-            var transpilerMethod = typeof(DelegateSupport_ConvertDelegatePatch)
-                .GetMethod(nameof(DelegateSupport_ConvertDelegatePatch.Transpiler));
-            harmony.Patch(convertDelegateBase, null, null, new(transpilerMethod));
-
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::GenerateNativeToManagedTrampoline()");
             MethodBase generateTrampolineBase = typeof(DelegateSupport).GetMethod("GenerateNativeToManagedTrampoline")!;
             var trampolineTranspilerMethod = typeof(DelegateSupport_GenerateNativeToManagedTrampolinePatch)
                 .GetMethod(nameof(DelegateSupport_GenerateNativeToManagedTrampolinePatch.Transpiler));
-            harmony.Patch(generateTrampolineBase, null, null, new(trampolineTranspilerMethod));
+            harmony.Patch(generateTrampolineBase, null, null, new(trampolineTranspilerMethod) { debug = true });
+            
 
             MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport+MethodSignature::MethodSignature()");
             MethodBase MethodSignatureBase = null!;
@@ -44,14 +37,24 @@ namespace HousePartyPlugin
             }
             var methodSignaturetranspilerMethod = typeof(DelegateSupport_MethodSignature_MethodSignature)
                 .GetMethod(nameof(DelegateSupport_MethodSignature_MethodSignature.Transpiler));
-            harmony.Patch(MethodSignatureBase, null, null, new(methodSignaturetranspilerMethod));
+            harmony.Patch(MethodSignatureBase, null, null, new(methodSignaturetranspilerMethod) { debug = true });
+            
+
+            MelonLogger.Msg("Patching Il2CppInterop.Runtime.DelegateSupport::ConvertDelegate<TIL2CPP>()");
+            MethodBase convertDelegateBase = typeof(DelegateSupport).GetMethod("ConvertDelegate")!
+                .MakeGenericMethod(Il2Cpp!.GetType("Il2CppSystem.Delegate")!);
+            var transpilerMethod = typeof(DelegateSupport_ConvertDelegatePatch)
+                .GetMethod(nameof(DelegateSupport_ConvertDelegatePatch.Transpiler));
+            harmony.Patch(convertDelegateBase, null, null, new(transpilerMethod) { debug = true });
+            
+
             MelonLogger.Msg("All Il2CppInterop DelegateSupport patches complete");
         }
     }
 
     public static class DelegateSupport_ConvertDelegatePatch
     {
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
             var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParameters");
@@ -83,15 +86,17 @@ namespace HousePartyPlugin
                 if (codes[i].opcode == OpCodes.Stloc_3)
                 {
                     CodeInstruction ldtokenTIl2Cpp = null!;
+                    object? TIl2Cpp = null;
                     foreach (var code in codes)
                     {
-                        if (code.opcode == OpCodes.Ldtoken)
+                        //first initobj initializes the type parameter of type T
+                        if (TIl2Cpp == null && code.opcode == OpCodes.Initobj)
                         {
-                            if ($"{code.operand}" == "Il2CppInterop.Runtime.InteropTypes.Il2CppObjectBase")
-                            {
-                                ldtokenTIl2Cpp = code;
-                                break;
-                            }
+                            TIl2Cpp = code.operand;
+                        }
+                        else if (code.opcode == OpCodes.Ldtoken && TIl2Cpp!.ToString() == code.operand?.ToString())
+                        {
+                            ldtokenTIl2Cpp = code;
                         }
                     }
                     //patch in the new code (both 5 instructions long without the stloc.3)
@@ -99,7 +104,7 @@ namespace HousePartyPlugin
                     //var il2CppDelegateType = Il2CppSystem.Type.internal_from_handle(IL2CPP.il2cpp_class_get_type(classTypePtr));
                     //var nativeDelegateInvokeMethod = il2CppDelegateType.GetMethod("Invoke");
                     //new:
-                    //var nativeDelegateInvokeMethod = Il2CppType.From(typeof(TIl2Cpp)).GetMethodFix(managedInvokeMethod);
+                    //var nativeDelegateInvokeMethod = Il2CppType.From(typeof(TIl2Cpp)).GetConsole(managedInvokeMethod);
                     codes[i - 5] = new CodeInstruction(OpCodes.Ldtoken, ldtokenTIl2Cpp.operand) { blocks = codes[i - 5].blocks, labels = codes[i - 5].labels };
                     codes[i - 4] = new CodeInstruction(OpCodes.Call, getTypeFromHandle) { blocks = codes[i - 4].blocks, labels = codes[i - 4].labels };
                     codes[i - 3] = new CodeInstruction(OpCodes.Call, from) { blocks = codes[i - 3].blocks, labels = codes[i - 3].labels };
@@ -118,14 +123,11 @@ namespace HousePartyPlugin
                     if (((MethodBase)codes[i].operand!).FullDescription() == get_FullName.FullDescription())
                     {
                         codes[i] = new CodeInstruction(OpCodes.Call, FullNameFix) { blocks = codes[i].blocks, labels = codes[i].labels };
-                        MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched DelegateSupport.ConvertDelegate to use the safe il2cpp internal way of getting the type name");
-                        return codes.AsEnumerable();
                     }
                 }
             }
-
-            MelonLogger.Error("[House_Party_Compatibility_Layer] Couldn't patch DelegateSupport.ConvertDelegate");
-            return instructions;
+            MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched DelegateSupport.ConvertDelegate to use the safe il2cpp internal way of getting the type name");
+            return codes.AsEnumerable();
         }
     }
 
@@ -134,15 +136,19 @@ namespace HousePartyPlugin
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
-            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParameters");
-            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParametersInternal");
+            var getParameters = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParameters")!;
+            var getParametersInternal = DelegateConverterPatch.Il2Cpp!.GetType("Il2CppSystem.Reflection.MethodInfo")!.GetMethod("GetParametersInternal")!;
+            MelonLogger.Msg("test");
 
             for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i].opcode == OpCodes.Callvirt)
+                MelonLogger.Msg(codes[i].ToString());
+                if (codes[i].opcode == OpCodes.Callvirt || codes[i].opcode == OpCodes.Call)
                 {
-                    if (((MethodBase)codes[i].operand!).FullDescription() == getParameters.FullDescription())
+                    MelonLogger.Msg("call or callvirt");
+                    if (((MethodBase)codes[i].operand!).ToString() == getParameters.ToString())
                     {
+                        MelonLogger.Msg("parameter match");
                         codes[i] = new CodeInstruction(OpCodes.Callvirt, getParametersInternal) { blocks = codes[i].blocks, labels = codes[i].labels };
                         MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched DelegateSupport.GenerateNativeToManagedTrampoline to use the safe GetParametersInternal()");
                         return codes.AsEnumerable();

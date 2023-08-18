@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using HarmonyLib.Tools;
 using MelonLoader;
 using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -16,8 +15,6 @@ namespace HousePartyPlugin
 {
     public class Plugin : MelonPlugin
     {
-        private readonly List<AssemblyLoadContext> contexts = new();
-
         static Plugin()
         {
             AppDomain.CurrentDomain.ResourceResolve += new(AssemblyResolveEventListener!);
@@ -70,32 +67,28 @@ namespace HousePartyPlugin
             //inject a new unhollower version, old one doesnt work on house party
             ForceDumperVersion();
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
+
+            HarmonyFileLog.Enabled = true;
+
+            AssemblyLoadContext.Default.LoadFromStream(File.OpenRead(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
         }
 
-        public override void OnPreSupportModule()
+        public override void OnPreModsLoaded()
         {
             //after this the new files are generated
             AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
 
+            //patch the Il2Cpp Support Module
+            SupportModulePatch.Apply(HarmonyInstance);
+
             //patching il2cppinterop.runtime
             HarmonyInstance.PatchAll();
-            //it does its logging in the transpiler, no need to spam one more Msg();
 
             //patching the il2cppinterop delegate converter
             DelegateConverterPatch.Apply(HarmonyInstance);
-            //does its own logging
-
-            foreach (var context in contexts)
-            {
-                MelonLogger.Msg("[House_Party_Compatibility_Layer] Unloading " + context.Name + "from our own context");
-                context.Unload();
-                MelonLogger.Msg("[House_Party_Compatibility_Layer] Loading " + context.Name + " into the default context");
-                AssemblyLoadContext.Default.LoadFromAssemblyName(context.Assemblies.First().GetName());
-            }
 
             //patch the scenehandler
             SceneHandlerPatch.Apply(HarmonyInstance);
-            MelonLogger.Msg("[House_Party_Compatibility_Layer] Patched the SceneHandler");
         }
 
         private static void ForceDumperVersion()
