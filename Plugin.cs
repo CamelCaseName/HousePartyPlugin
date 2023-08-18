@@ -1,4 +1,5 @@
-﻿using MelonLoader;
+﻿using HarmonyLib.Tools;
+using MelonLoader;
 using System;
 using System.IO;
 using System.Reflection;
@@ -16,9 +17,7 @@ namespace HousePartyPlugin
     {
         static Plugin()
         {
-            AppDomain.CurrentDomain.ResourceResolve += new(AssemblyResolveEventListener!);
             SetOurResolveHandlerAtFront();
-            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
         }
 
         private static void SetOurResolveHandlerAtFront()
@@ -67,6 +66,11 @@ namespace HousePartyPlugin
             ForceDumperVersion();
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
 
+            HarmonyFileLog.Enabled = true;
+        }
+
+        public override void OnPreModsLoaded()
+        {
             //patching il2cppinterop.runtime
             HarmonyInstance.PatchAll();
         }
