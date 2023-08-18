@@ -18,6 +18,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Il2CppInterop.HarmonySupport.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Il2CppInterop.HarmonySupport.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>G:\SteamLibrary\steamapps\common\House Party\MelonLoader\net6\0Harmony.dll</HintPath>
       <Private>False</Private>

@@ -69,26 +69,15 @@ namespace HousePartyPlugin
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
 
             HarmonyFileLog.Enabled = true;
-
-            AssemblyLoadContext.Default.LoadFromStream(File.OpenRead(".\\MelonLoader\\Dependencies\\SupportModules\\Il2Cpp.dll"));
         }
 
         public override void OnPreModsLoaded()
         {
-            //after this the new files are generated
-            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
-
-            //patch the Il2Cpp Support Module
-            SupportModulePatch.Apply(HarmonyInstance);
-
             //patching il2cppinterop.runtime
             HarmonyInstance.PatchAll();
 
-            //patching the il2cppinterop delegate converter
-            DelegateConverterPatch.Apply(HarmonyInstance);
-
-            //patch the scenehandler
-            SceneHandlerPatch.Apply(HarmonyInstance);
+            //after this the new files are generated
+            AppDomain.CurrentDomain.ResourceResolve -= new(AssemblyResolveEventListener!);
         }
 
         private static void ForceDumperVersion()
