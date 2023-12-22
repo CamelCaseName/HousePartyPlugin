@@ -44,7 +44,7 @@ namespace HousePartyPlugin
             }
             else
             {
-                MelonLogger.Msg("P[House_Party_Compatibility_Layer] atching the new Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
+                MelonLogger.Msg("[House_Party_Compatibility_Layer] Patching the new Il2CppInterop.Runtime.Injection.InjectorHelpers::Setup()");
                 var InjectorHelpersType = typeof(ClassInjector).Assembly.GetType("Il2CppInterop.Runtime.Injection.InjectorHelpers")!;
                 var GenericMethodGetMethod = InjectorHelpersType.GetField("GenericMethodGetMethodHook", BindingFlags.Static | BindingFlags.NonPublic)!;
                 var GetMethodHookType = typeof(ClassInjector).Assembly.GetType("Il2CppInterop.Runtime.Injection.Hooks.GenericMethod_GetMethod_Hook")!;

@@ -30,6 +30,10 @@
       <HintPath>G:\SteamLibrary\steamapps\common\House Party\MelonLoader\net6\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="AssetRipper.VersionUtilities">
+      <HintPath>G:\SteamLibrary\steamapps\common\House Party\MelonLoader\net6\AssetRipper.VersionUtilities.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Il2CppInterop.Runtime">
       <HintPath>Resources\Il2CppInterop.Runtime.dll</HintPath>
       <Private>False</Private>

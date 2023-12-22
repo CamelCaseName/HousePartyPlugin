@@ -1,5 +1,7 @@
-﻿using HarmonyLib.Tools;
+﻿using AssetRipper.VersionUtilities;
+using Il2CppInterop.Runtime.Runtime;
 using MelonLoader;
+using MelonLoader.InternalUtils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -59,14 +61,14 @@ namespace HousePartyPlugin
         }
 
         private const string ForcedCpp2ILVersion = "2022.1.0-pre-release.12";
+        private const string ForcedUnityVersion = "2022.3.13";
 
         public override void OnPreInitialization()
         {
             //inject a new unhollower version, old one doesnt work on house party
             ForceDumperVersion();
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
-
-            HarmonyFileLog.Enabled = true;
+            MelonLogger.Msg($"Forced Unity Runtime version to {ForcedUnityVersion}");
         }
 
         public override void OnPreModsLoaded()
@@ -77,8 +79,13 @@ namespace HousePartyPlugin
 
         private static void ForceDumperVersion()
         {
+            PropertyInfo setUnityVersion = typeof(MelonLaunchOptions.Core).GetProperty("UnityVersion")!;
+            setUnityVersion.SetValue(null, ForcedUnityVersion);
             PropertyInfo ForceDumperVersion = typeof(MelonLaunchOptions.Il2CppAssemblyGenerator).GetProperty("ForceVersion_Dumper")!;
             ForceDumperVersion.SetValue(null, ForcedCpp2ILVersion);
+            
+            PropertyInfo setEngineVersion = typeof(UnityInformationHandler).GetProperty("EngineVersion")!;
+            setEngineVersion.SetValue(null, UnityVersion.Parse(ForcedUnityVersion));
         }
 
         private static Assembly AssemblyResolveEventListener(object sender, ResolveEventArgs args)
