@@ -63,10 +63,13 @@ namespace HousePartyPlugin
 
         private const string ForcedCpp2ILVersion = "2022.1.0-pre-release.12";
         private const string ForcedUnityVersion = "2022.3.13";
-        private const string BuildUnityVersion = "2022.3.16f1";
 
         public override void OnPreInitialization()
         {
+            if (new Version(BuildInfo.Version) > new Version(0, 6, 1))
+            {
+                MelonLogger.Error("This plugin is no longer needed, you can safely remove it!");
+            }
             //inject a new unhollower version, old one doesnt work on house party
             ForceDumperVersion();
             MelonLogger.Msg($"Forced Cpp2Il version to {ForcedCpp2ILVersion}");
@@ -81,14 +84,6 @@ namespace HousePartyPlugin
 
         private static void ForceDumperVersion()
         {
-            PropertyInfo setUnityVersion = typeof(MelonLaunchOptions.Core).GetProperty("UnityVersion")!;
-
-            if (UnityInformationHandler.EngineVersion.ToString() != BuildUnityVersion)
-            {
-                MelonLogger.Warning("Your Game may not be the latest version!");
-                MelonLogger.Warning($"Your Game reports Unity version {UnityInformationHandler.EngineVersion.ToString()} but this plugin was built for {BuildUnityVersion}!");
-            }
-            setUnityVersion.SetValue(null, ForcedUnityVersion);
             PropertyInfo ForceDumperVersion = typeof(MelonLaunchOptions.Il2CppAssemblyGenerator).GetProperty("ForceVersion_Dumper")!;
             ForceDumperVersion.SetValue(null, ForcedCpp2ILVersion);
             
