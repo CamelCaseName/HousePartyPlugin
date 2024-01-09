@@ -3,12 +3,13 @@ using Il2CppInterop.Runtime.Runtime;
 using MelonLoader;
 using MelonLoader.InternalUtils;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
 [assembly: HarmonyDontPatchAll]
-[assembly: MelonInfo(typeof(HousePartyPlugin.Plugin), "House Party Compatibility Layer", "1.0.1", "Lenny")]
+[assembly: MelonInfo(typeof(HousePartyPlugin.Plugin), "House Party Compatibility Layer", "1.0.2", "Lenny")]
 [assembly: MelonColor(255, 120, 20, 140)]
 [assembly: MelonGame("Eek", "House Party")]
 [assembly: VerifyLoaderVersion(0, 6, 1, true)]
@@ -80,6 +81,8 @@ namespace HousePartyPlugin
         private static void ForceDumperVersion()
         {
             PropertyInfo setUnityVersion = typeof(MelonLaunchOptions.Core).GetProperty("UnityVersion")!;
+            if ((string?)setUnityVersion.GetValue(null) != "2023.3.16f1")
+                MelonLogger.Warning("Your Game may not be the latest version!");
             setUnityVersion.SetValue(null, ForcedUnityVersion);
             PropertyInfo ForceDumperVersion = typeof(MelonLaunchOptions.Il2CppAssemblyGenerator).GetProperty("ForceVersion_Dumper")!;
             ForceDumperVersion.SetValue(null, ForcedCpp2ILVersion);
